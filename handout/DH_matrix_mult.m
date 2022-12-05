@@ -1,0 +1,81 @@
+syms theta_1 theta_2 theta_3 theta_4 theta_5 d1 a2 a3 d4 d5 px py pz r11 r12 r13 r21 r22 r23 r31 r32 r33 theta_a
+
+H_0_1 = [cos(theta_1), 0, sin(theta_1), 0;
+         sin(theta_1), 0, -cos(theta_1), 0;
+         0, 1, 0, d1;
+         0, 0, 0, 1];
+H_1_2 = [cos(theta_2), sin(theta_2), 0, a2*cos(theta_2);
+         sin(theta_2), -cos(theta_2), 0, a2*sin(theta_2);
+         0, 0, -1, 0;
+         0, 0, 0, 1];
+H_2_3 = [cos(theta_3), sin(theta_3), 0, a3*cos(theta_3);
+         sin(theta_3), -cos(theta_3), 0, a3*sin(theta_3);
+         0, 0, -1, 0;
+         0, 0, 0, 1];
+H_3_4 = [cos(theta_4), 0, sin(theta_4), 0;
+         sin(theta_4), 0, -cos(theta_4), 0;
+         0, 1, 0, d4;
+         0, 0, 0, 1];
+H_4_5 = [cos(theta_5), -sin(theta_5), 0, 0;
+         sin(theta_5), cos(theta_5), 0, 0;
+         0, 0, 1, d5;
+         0, 0, 0, 1];
+
+
+H = [1,0,0,0;0,1,0,0;0,0,1,3;0,0,0,1];
+
+H_0_5 = simplify(H_0_1*H_1_2*H_2_3*H_3_4*H_4_5);
+H_1_5 = simplify(H_1_2*H_2_3*H_3_4*H_4_5);
+H_2_5 = simplify(H_2_3*H_3_4*H_4_5);
+H_3_5 = simplify(H_3_4*H_4_5);
+
+%H_1_5 = (H_1_2*H_2_3*H_3_4*H_4_5);
+%H_2_5 = (H_2_3*H_3_4*H_4_5);
+%H_3_5 = (H_3_4*H_4_5);
+
+%H_0_2 = simplify(H_0_1*H_1_2);
+%H_0_3 = simplify(H_0_1*H_1_2*H_2_3);
+%H_0_4 = simplify(H_0_1*H_1_2*H_2_3*H_3_4);
+
+H_0_2 = (H_0_1*H_1_2);
+H_0_3 = (H_0_2*H_2_3);
+H_0_4 = (H_0_3*H_3_4);
+
+H = [r11,r12,r13,px;r21,r22,r23,py;r31,r32,r33,pz;0,0,0,1];
+
+H_0_1_inv = inv(H_0_1);
+H_0_2_inv = inv(H_0_2);
+H_0_3_inv = inv(H_0_3);
+H_0_4_inv = inv(H_0_4);
+
+l_H_1_5 = simplify(H_0_1_inv*H);
+l_H_2_5 = simplify(H_0_2_inv*H);
+l_H_3_5 = simplify(H_0_3_inv*H);
+l_H_4_5 = simplify(H_0_4_inv*H);
+
+l_H_3_5(1,1) = r31*sin(theta_2-theta_3)+cos(theta_2 - theta_3)*(r11*cos(theta_1) + r21*sin(theta_1));
+l_H_3_5(2,1) = r31*cos(theta_2 - theta_3)-sin(theta_2 - theta_3)*(r11*cos(theta_1) + r21*sin(theta_1));
+l_H_3_5(1,2) = r32*sin(theta_2 - theta_3)+cos(theta_2 - theta_3)*(r12*cos(theta_1) + r22*sin(theta_1));
+l_H_3_5(2,2) = r32*cos(theta_2 - theta_3)-sin(theta_2 - theta_3)*(r12*cos(theta_1) + r22*sin(theta_1));
+l_H_3_5(1,3) = r33*sin(theta_2 - theta_3)+cos(theta_2 - theta_3)*(r13*cos(theta_1) + r23*sin(theta_1));
+l_H_3_5(2,3) = r33*cos(theta_2 - theta_3)-sin(theta_2 - theta_3)*(r13*cos(theta_1) + r23*sin(theta_1));
+l_H_3_5(1,4) = - a3 - a2*cos(theta_3) - (d1+pz)*sin(theta_2 - theta_3)+cos(theta_2 - theta_3)*(px*cos(theta_1) + py*sin(theta_1));
+l_H_3_5(2,4) = (pz-d1)*cos(theta_2 - theta_3)- a2*sin(theta_3)-sin(theta_2 - theta_3)*(px*cos(theta_1) + py*sin(theta_1));
+% Equation with theta_1, 3, and 4
+%(px*cos(theta_1) + py*sin(theta_1))^2 + (py*cos(theta_1) - px*sin(theta_1))^2 + (d1 - pz)^2 = a2^2 + 2*cos(theta_3)*a2*a3 - 2*sin(theta_3 - theta_4)*a2*d5 + a3^2 + 2*sin(theta_4)*a3*d5 + d4^2 + d5^2
+
+% Equation with 2, 3, 4
+%theta_3 - asin(sqrt(((r31*sin(theta_2) + r11*cos(theta_1)*cos(theta_2) + r21*cos(theta_2)*sin(theta_1))^2 + (r12*cos(theta_1)*sin(theta_2) - r32*cos(theta_2) + r22*sin(theta_1)*sin(theta_2))^2 + sin(theta_5)^2 - 1)/(2*sin(theta_5)^2-1))) == theta_4
+
+eqn1 = atan2(r31,r11*cos(theta_1)+r21*sin(theta_1)) == theta_2-theta_3+theta_4;
+eqn2 = (px*cos(theta_1) + py*sin(theta_1))^2 + (py*cos(theta_1) - px*sin(theta_1))^2 + (d1 - pz)^2 == a2^2 + 2*cos(theta_3)*a2*a3 - 2*sin(theta_3 - theta_4)*a2*d5 + a3^2 + 2*sin(theta_4)*a3*d5 + d4^2 + d5^2;
+eqn3 = (r31*sin(theta_2) + r11*cos(theta_1)*cos(theta_2) + r21*cos(theta_2)*sin(theta_1))^2 + (r12*cos(theta_1)*sin(theta_2) - r32*cos(theta_2) + r22*sin(theta_1)*sin(theta_2))^2 == 2*sin(theta_3 - theta_4)^2*sin(theta_5)^2 - sin(theta_5)^2 - sin(theta_3 - theta_4)^2 + 1;
+
+%S = solve([eqn1, eqn2, eqn3], [theta_2, theta_3, theta_4]);
+
+q1 = (px + a2*cos(theta_2) + a3*cos(theta_2 - theta_3))^2;
+q2 = (py + a2*sin(theta_2) + a3*sin(theta_2 - theta_3))^2;
+
+
+ %sin(theta_2) = simplify(H_1_5(1,1)^2+H_1_5(2,4)^2)
+%cos(theta_2 - theta_3)*(r11*cos(theta_1) + r21*sin(theta_1)) + r31*sin(theta_2 - theta_3) == cos(theta_4)*cos(theta_5)
