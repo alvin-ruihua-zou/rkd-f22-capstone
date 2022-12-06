@@ -55,25 +55,13 @@ robot.setCommandLifetime(1);
 % Load saved control gains, and set these on the robot. These can be tuned to
 % improve accuracy, but you should be very careful when doing so.
 gains = load('jenga_gains.mat');
-gains.jenga_gains.positionKp = [1 4 5 3 1];
+gains.jenga_gains.positionKp = [1 2 2 2 1];
 gains.jenga_gains.positionKi = [0 0 0 0 0];
 gains.jenga_gains.positionKd = [0 0.01 0.01 0.01 0];
 gains.jenga_gains.positionFF = [0.0 0.05 0.05 0.0 0.0];
 
 HebiUtils.sendWithRetry(robot, 'gains', gains.jenga_gains);
-%{
-for i = 0:10
-robot.set('gains', gains.jenga_gains);
-pause(0.5);
-end
-%}
-%robot.set('gains', gains.jenga_gains);
-%Base = 20, 4, 0.1
-%Elbow = 30, 5, 0.1
-%Gripper = blank
-%Shoulder = 4, 5, 0.1
-%Wrist1 = 5, 0.5, 0
-%Wrist2 = 30, 0, 0
+
 %% Connect to gripper, and initialize some settings properly
 gripper = HebiLookup.newGroupFromNames('16384','gripper');
 gripper.setCommandLifetime(0);
@@ -112,7 +100,8 @@ robot_dh= Robot([0, pi/2, d1, 0; ...
 
 
 feeder_thetas = [-0.0036    0.7323    1.4531    0.0236    0.0015]';
-above_feeder_thetas = [-0.0036    0.9053    1.6378    0.0352    0.0015]'; 
+feeder_thetas = get_near_pos_ee(robot_dh, feeder_thetas,3.2,-0.5,-2,0,0,0);
+above_feeder_thetas = get_near_pos_ee(robot_dh, feeder_thetas,0,0,-8,0,0,0);
 
 final_position_thetas = [0.4652;0.6359;2.0741;1.4723; -5.4990];
 air_pos_thetas = [0.2755    1.2793    1.9223   -0.8603     1.0262]'; 
@@ -121,17 +110,50 @@ air_pos2_thetas = [0.7561    0.9410    1.7485   -0.6664    0.5822]';
 feeder_pos = robot_dh.ee(feeder_thetas);
 above_feeder_pos = robot_dh.ee(above_feeder_thetas);
 
-jenga_base_thetas = zeros(5,3);
-above_jenga_base_thetas = zeros(5,3);
-jenga_base_thetas(:,1) = [0.9579    0.5849    1.1957   -0.9602    0.9579]';
-above_jenga_base_thetas(:,1) = get_near_pos(robot_dh, jenga_base_thetas(:,1),0,0,4,0,0,0);
-for index = 2:3
-    jenga_base_thetas(:,index) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1),-3,0,0,0,0,0);
-    above_jenga_base_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),0,0,4,0,0,0);
+block_num = 3;
+offset = 0;
+layer_offset = 2;
+above_offset = 4;
+side_offset = -2.5;
+
+jenga_base_thetas = zeros(5,block_num*6);
+above_jenga_base_thetas = zeros(5,block_num*6);
+jenga_base_thetas(:,1) = [0.9579    0.5849    1.1957   -0.9602    0.9579]'+[0;0;0;0.022;0];
+jenga_base_thetas(:,1) = get_near_pos_ee(robot_dh, jenga_base_thetas(:,1),0.7,0,-2.7,0,0,0);
+above_jenga_base_thetas(:,1) = get_near_pos(robot_dh, jenga_base_thetas(:,1),0,0,above_offset,0,0,0);
+for index = 2:block_num
+    jenga_base_thetas(:,index) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1),side_offset,0,0,0,0,0);
+    above_jenga_base_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),0,0,above_offset,0,0,0);   
 end
 
-jenga_base_pos = zeros(size(jenga_base_thetas));
-above_jenga_base_pos = zeros(size(jenga_base_thetas));
+
+
+for double_layer = 1:3
+    % Vertical layer
+    offset = offset + 3;
+    % Offset from the middle block of the previous layer
+    jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,offset-1),0,-side_offset,layer_offset,0,0,0)+[0;0;0;0;pi/2];
+    above_jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,1+offset),0,0,above_offset,0,0,0);
+    for index = 2:block_num
+        jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),0,side_offset,0,0,0,0);
+        above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
+    end
+    if double_layer ~= 3
+        % Horizontal layer
+        offset = offset + 3;
+        % Offset from the first block
+        jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,1),0,0,layer_offset*double_layer,0,0,0);
+        above_jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,1+offset),0,0,above_offset,0,0,0);
+        for index = 2:block_num
+            jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),side_offset,0,0,0,0,0);
+            above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
+            
+        end
+    end
+end
+
+jenga_base_pos = zeros(6,size(jenga_base_thetas,2));
+above_jenga_base_pos = zeros(6,size(jenga_base_thetas,2));
 for index = 1:size(jenga_base_pos,2)
     jenga_base_pos(:,index) = robot_dh.ee(jenga_base_thetas(:,index));
     above_jenga_base_pos(:,index) = robot_dh.ee(above_jenga_base_thetas(:,index));
@@ -142,7 +164,7 @@ end
 %% seconds.  We break this into 3 seconds to make most of the motion, and 1 for
 %% the final approach.
 resolution = 50;
-
+placing_resolution = 70;
 
 
 trajectory = [trajectory_spline([initial_thetas air_pos_thetas above_feeder_thetas], [0, 2, 3], frequency), ...
@@ -154,29 +176,36 @@ command_trajectory(robot, trajectory, frequency);
 %% set above, then the robot "goes limp" because the previous position and/or
 %% velocity and torque commands "expire".
 
-for index = 1:3
+for index = 1:6
     % Assume ee is at feeder. Move block to base and then move back to
     % feeder.
+
+    pos = (robot_dh.ee(feeder_thetas)+jenga_base_pos(:,index))/2;
+    pos = [pos(1:3);jenga_base_pos(4:6,index)];
+    pos = robot_dh.inverse_kinematics_analytical(pos,jenga_base_pos(:,index));
+
     pick(gripper);
-    pause(0.1);
+    pause(0.15);
     
     trajectory = [linear_workspace_trajectory(robot_dh,feeder_thetas,above_feeder_pos,resolution), ...
-                  trajectory_spline([above_feeder_thetas,air_pos2_thetas,above_jenga_base_thetas(:,index)],[0,2,4],100), ... 
-                  linear_workspace_trajectory(robot_dh,above_jenga_base_thetas(:,index),jenga_base_pos(:,index),resolution)];
+                  trajectory_spline([above_feeder_thetas,pos],[0,1],100), ... 
+                  linear_workspace_trajectory(robot_dh,pos,above_jenga_base_pos(:,index),resolution*1.5), ...
+                  linear_workspace_trajectory(robot_dh,above_jenga_base_thetas(:,index),jenga_base_pos(:,index),placing_resolution)];
     command_trajectory(robot, trajectory, frequency);
     
     place(gripper);
     pause(0.1);
 
-    trajectory = [linear_workspace_trajectory(robot_dh,jenga_base_thetas(:,index),above_jenga_base_pos(:,index),resolution), ...
-              trajectory_spline([above_jenga_base_thetas(:,index), air_pos2_thetas, above_feeder_thetas],[0,2,4],100), ...
-              linear_workspace_trajectory(robot_dh,above_feeder_thetas, feeder_pos,resolution)];
+    trajectory = [linear_workspace_trajectory(robot_dh,jenga_base_thetas(:,index),above_jenga_base_pos(:,index),placing_resolution), ...
+                   linear_workspace_trajectory(robot_dh,above_jenga_base_thetas(:,index),robot_dh.ee(pos),resolution*1.5), ... 
+                   trajectory_spline([pos,above_feeder_thetas],[0,1],100), ...
+                   linear_workspace_trajectory(robot_dh,above_feeder_thetas, feeder_pos,resolution)];
     command_trajectory(robot, trajectory, frequency);
 end
 
 %% Move to rest position
 trajectory = [linear_workspace_trajectory(robot_dh,feeder_thetas,above_feeder_pos,resolution), ...
-              trajectory_spline([above_feeder_thetas air_pos_thetas final_position_thetas], [0, 2,4], frequency)];
+              trajectory_spline([above_feeder_thetas air_pos_thetas final_position_thetas], [0,1.5,3], frequency)];
 command_trajectory(robot, trajectory, frequency);
 
 
