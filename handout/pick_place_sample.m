@@ -115,64 +115,117 @@ above_feeder_pos = robot_dh.ee(above_feeder_thetas);
 
 block_num = 3;
 offset = 0;
-layer_offset = 2.8;
-above_offset = 8;
+layer_offset = 2.65;
+above_offset = 6;
 side_offset = -2.8;
 vlayer_offset = -2.6;
 v_layer_side_offset = 2.7;
-approach_offset = -0.5;
+side_z_offset = 0.5;
+left_offset = 2;
+right_offset = -2.5;
+front_offset = -2.5;
+back_offset = 2;
 
 jenga_base_thetas = zeros(5,block_num*6);
 above_jenga_base_thetas = zeros(5,block_num*6);
-approach_jenga_base_thetas = zeros(5,block_num*6);
+jenga_side_thetas = zeros(5,18);
 jenga_base_thetas(:,1) = [0.9579    0.5849    1.1957   -0.9602    0.9579]';
-jenga_base_thetas(:,1) = get_near_pos(robot_dh, jenga_base_thetas(:,1),2,1.5,2.2,0,0,0);
+jenga_base_thetas(:,1) = get_near_pos(robot_dh, jenga_base_thetas(:,1),0,1.5,2.2,0,0,0);
 above_jenga_base_thetas(:,1) = get_near_pos(robot_dh, jenga_base_thetas(:,1),0,0,above_offset,0,0,0);
-approach_jenga_base_thetas(:,1) = get_near_pos(robot_dh, jenga_base_thetas(:,1),0,approach_offset,above_offset,0,0,0);
-for index = 2:block_num
-    jenga_base_thetas(:,index) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1),side_offset,0,0,0,0,0);
-    above_jenga_base_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),0,0,above_offset,0,0,0);
-    approach_jenga_base_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),0,approach_offset,above_offset,0,0,0); 
-end
+jenga_side_thetas(:,1) = jenga_base_thetas(:,1);
+above_jenga_side_thetas(:,1) = get_near_pos(robot_dh, jenga_side_thetas(:,1),0,0,above_offset,0,0,0);
 
+% Block on left
+index = 2;
+jenga_base_thetas(:,index) = get_near_pos(robot_dh,jenga_base_thetas(:,1),left_offset,0,side_z_offset,0,0,0);
+above_jenga_base_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),0,0,above_offset,0,0,0);
+jenga_side_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),left_offset,0,side_z_offset,0,0,0);
+above_jenga_side_thetas(:,index) = get_near_pos(robot_dh, jenga_side_thetas(:,index),0,0,above_offset,0,0,0);
 
+% Block on right
+index = 3;
+jenga_base_thetas(:,index) = get_near_pos(robot_dh,jenga_base_thetas(:,1),right_offset+0.6,0,side_z_offset,0,0,0);
+above_jenga_base_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),0,0,above_offset,0,0,0);
+jenga_side_thetas(:,index) = get_near_pos(robot_dh, jenga_base_thetas(:,index),right_offset,0,side_z_offset,0,0,0);
+above_jenga_side_thetas(:,index) = get_near_pos(robot_dh, jenga_side_thetas(:,index),0,0,above_offset,0,0,0);
 
+back_z_offset = 0;
+middle_z_offset = 0;
+middle_y = 0;
 for double_layer = 1:3
     % Vertical layer
     offset = offset + 3;
-    % Offset from the middle block of the previous layer
-    jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,offset-1),0,vlayer_offset,layer_offset,0,0,0)+[0;0;0;0;pi/2];
-    above_jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,1+offset),0,0,above_offset,0,0,0);
-    approach_jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,1+offset),0,approach_offset,above_offset,0,0,0);
-    for index = 2:block_num
-        jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),0,v_layer_side_offset,0,0,0,0);
-        above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
-        approach_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,approach_offset,above_offset,0,0,0);
+    if double_layer == 3
+        middle_z_offset = 0;
+        layer_offset = layer_offset -0.1 ;
+        middle_y = 0.6;
     end
+    % Offset from the middle block of the previous layer
+    jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,offset-2),0,middle_y,layer_offset+middle_z_offset,0,0,0)+[0;0;0;0;pi/2];
+    above_jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,1+offset),0,0,above_offset,0,0,0);
+    jenga_side_thetas(:,1+offset) = jenga_base_thetas(:,1+offset);
+    above_jenga_side_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_side_thetas(:,1+offset),0,0,above_offset,0,0,0);
+
+    if double_layer == 2
+        layer_offset = layer_offset + 0.5;
+        front_offset = front_offset + 0;
+        back_offset = back_offset + 0.3;
+        back_z_offset = back_z_offset + 0.6;
+        left_offset = left_offset - 0.7;
+        right_offset = right_offset -0.1;
+    end
+
+    
+    % Front block
+    index = 2;
+    
+    jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),0,front_offset+1.3,side_z_offset+0.2,0,0,0);
+    above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
+    jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,front_offset,side_z_offset,0,0,0);
+    above_jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_side_thetas(:,index+offset),0,0,above_offset,0,0,0);
+
+    % Back block
+    index = 3;
+    jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),0,back_offset+0.7,side_z_offset+back_z_offset,0,0,0);
+    above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
+    jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,back_offset,side_z_offset,0,0,0);
+    above_jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_side_thetas(:,index+offset),0,0,above_offset,0,0,0);
+
     if double_layer ~= 3
         % Horizontal layer
         offset = offset + 3;
         % Offset from the first block
-        jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,1),0,0,layer_offset*double_layer,0,0,0);
+        jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,1),-1,0,layer_offset*double_layer+0.4,0,0,0);
         above_jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,1+offset),0,0,above_offset,0,0,0);
-        approach_jenga_base_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,1+offset),0,approach_offset,above_offset,0,0,0);
-        for index = 2:block_num
-            jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),side_offset,0,0,0,0,0);
-            above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
-            approach_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,approach_offset,above_offset,0,0,0);
-            
-        end
+        jenga_side_thetas(:,1+offset) = jenga_base_thetas(:,1+offset);
+        above_jenga_side_thetas(:,1+offset) = get_near_pos(robot_dh, jenga_side_thetas(:,1+offset),0,0,above_offset,0,0,0);
+
+        index = 2;
+        jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),left_offset,0,side_z_offset+0.6,0,0,0);
+        above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
+        jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),left_offset,0,side_z_offset+0.4,0,0,0);
+        above_jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_side_thetas(:,index+offset),0,0,above_offset,0,0,0);
+
+        index = 3;
+        jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh,jenga_base_thetas(:,index-1+offset),right_offset-1,0,side_z_offset,0,0,0);
+        above_jenga_base_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),0,0,above_offset,0,0,0);
+        jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_base_thetas(:,index+offset),right_offset,0,side_z_offset,0,0,0);
+        above_jenga_side_thetas(:,index+offset) = get_near_pos(robot_dh, jenga_side_thetas(:,index+offset),0,0,above_offset,0,0,0);
+
     end
 end
 
 jenga_base_pos = zeros(6,size(jenga_base_thetas,2));
 above_jenga_base_pos = zeros(6,size(jenga_base_thetas,2));
-approach_jenga_base_pos = zeros(6,size(jenga_base_thetas,2));
+jenga_side_pos = zeros(6,size(jenga_base_thetas,2));
+above_jenga_side_pos = zeros(6,size(jenga_base_thetas,2));
 for index = 1:size(jenga_base_pos,2)
     jenga_base_pos(:,index) = robot_dh.ee(jenga_base_thetas(:,index));
     above_jenga_base_pos(:,index) = robot_dh.ee(above_jenga_base_thetas(:,index));
-    approach_jenga_base_pos(:,index) = robot_dh.ee(approach_jenga_base_thetas(:,index));
+    jenga_side_pos(:,index) = robot_dh.ee(jenga_side_thetas(:,index));
+    above_jenga_side_pos(:,index) = robot_dh.ee(above_jenga_side_thetas(:,index));
 end
+
 pos = zeros(5,18);
 for index = 1:18
     pos1 = (robot_dh.ee(feeder_thetas)+jenga_base_pos(:,index))/2;
@@ -189,8 +242,8 @@ resolution = 50;
 placing_resolution = 80;
 frequency = 100;
 
-trajectory = [trajectory_spline([initial_thetas air_pos_thetas above_start_feeder_thetas], [0, 2, 4], frequency), ...
-              linear_workspace_trajectory(robot_dh,above_start_feeder_thetas, start_feeder_pos,resolution), ...
+trajectory = [trajectory_spline([initial_thetas air_pos_thetas above_feeder_thetas], [0, 2, 4], frequency), ...
+              linear_workspace_trajectory(robot_dh,above_feeder_thetas, feeder_pos,resolution), ...
               ];
 command_trajectory(robot, trajectory, frequency);
 %% Pick up the object at position 1.  We pause to let the robot stabilize before
@@ -208,8 +261,9 @@ for index = 1:18
     
     trajectory = [linear_workspace_trajectory(robot_dh,feeder_thetas,above_feeder_pos,30), ...
                   trajectory_spline([above_feeder_thetas,pos(:,index)],[0,0.8],100), ... 
-                  linear_workspace_trajectory(robot_dh,pos(:,index),above_jenga_base_pos(:,index),resolution+30), ...
-                  linear_workspace_trajectory(robot_dh,above_jenga_base_thetas(:,index),jenga_base_pos(:,index),placing_resolution)];
+                  linear_workspace_trajectory(robot_dh,pos(:,index),above_jenga_side_pos(:,index),resolution+30), ...
+                  linear_workspace_trajectory(robot_dh,above_jenga_side_thetas(:,index),jenga_side_pos(:,index),placing_resolution), ...
+                  linear_workspace_trajectory(robot_dh,jenga_side_thetas(:,index),jenga_base_pos(:,index),20)];
     command_trajectory(robot, trajectory, frequency);
    
     
